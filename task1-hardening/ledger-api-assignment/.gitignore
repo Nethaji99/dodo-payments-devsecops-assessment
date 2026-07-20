@@ -4,3 +4,5 @@ __pycache__/
 .DS_Store
 *.log
 deploy/secret-plain.yaml
+kubeseal
+kubeseal-0.27.1-linux-amd64.tar.gz
