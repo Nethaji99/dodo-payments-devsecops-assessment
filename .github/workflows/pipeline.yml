@@ -1,0 +1,45 @@
+name: Secure CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'task1-hardening/ledger-api-assignment/app/**'
+      - '.github/workflows/pipeline.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/ledger-api
+  APP_PATH: task1-hardening/ledger-api-assignment/app
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set image tag (immutable - git SHA)
+        id: meta
+        run: echo "tag=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build image
+        run: |
+          docker build -t "${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }}" "${{ env.APP_PATH }}"
+
+      - name: Push image
+        run: |
+          docker push "${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }}"
