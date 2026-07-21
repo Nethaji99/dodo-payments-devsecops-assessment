@@ -30,8 +30,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  sast-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Semgrep SAST - warn only (SARIF for Security tab)
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: p/python
+        env:
+          SEMGREP_RULES: p/python
+        continue-on-error: true
+
   build-and-push:
-    needs: secrets-scan
+    needs: [secrets-scan, sast-scan]
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.meta.outputs.tag }}
