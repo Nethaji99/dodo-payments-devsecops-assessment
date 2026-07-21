@@ -1,4 +1,3 @@
-cat > .github/workflows/pipeline.yml << 'EOF'
 name: Secure CI/CD Pipeline
 
 on:
@@ -47,4 +46,3 @@ jobs:
       - name: Push image
         run: |
           docker push "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}"
-EOF
