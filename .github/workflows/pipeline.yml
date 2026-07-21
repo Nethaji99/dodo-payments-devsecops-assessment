@@ -12,6 +12,8 @@ permissions:
   contents: read
   packages: write
   security-events: write
+  id-token: write
+  attestations: write
 
 env:
   APP_PATH: task1-hardening/ledger-api-assignment/app
@@ -50,6 +52,7 @@ jobs:
     outputs:
       image_tag: ${{ steps.meta.outputs.tag }}
       image_name: ${{ steps.meta.outputs.image }}
+      image_digest: ${{ steps.push.outputs.digest }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -73,8 +76,11 @@ jobs:
           docker build -t "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}" "${{ env.APP_PATH }}"
 
       - name: Push image
+        id: push
         run: |
           docker push "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}"
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}" | cut -d'@' -f2)
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
 
   image-scan:
     needs: build-and-push
@@ -105,3 +111,28 @@ jobs:
           severity: 'CRITICAL'
           exit-code: '1'
           trivyignores: '${{ env.APP_PATH }}/.trivyignore'
+
+  sign-and-attest:
+    needs: [build-and-push, image-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sign image with Cosign (keyless)
+        run: |
+          cosign sign --yes "${{ needs.build-and-push.outputs.image_name }}@${{ needs.build-and-push.outputs.image_digest }}"
+
+      - name: Generate SLSA-style provenance attestation
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: "${{ needs.build-and-push.outputs.image_name }}"
+          subject-digest: "${{ needs.build-and-push.outputs.image_digest }}"
+          push-to-registry: true
