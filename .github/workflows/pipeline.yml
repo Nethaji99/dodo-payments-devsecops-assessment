@@ -90,3 +90,4 @@ jobs:
           format: 'table'
           severity: 'CRITICAL'
           exit-code: '1'
+          trivyignores: '${{ env.APP_PATH }}/.trivyignore'

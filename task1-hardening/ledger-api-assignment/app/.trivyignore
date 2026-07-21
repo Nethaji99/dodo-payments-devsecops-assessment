@@ -1,0 +1,8 @@
+# perl-base CRITICAL CVEs - no upstream fix available (Debian trixie, essential package)
+# perl-base is an essential OS package on Debian and cannot be removed without
+# breaking the base image (confirmed: apt refuses removal without --allow-remove-essential).
+# The application (Python/Flask) does not invoke perl at runtime - no exploitable path.
+# Risk accepted and monitored; will re-scan and drop this exception once Debian ships a fix.
+CVE-2026-13221
+CVE-2026-42496
+CVE-2026-8376
