@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: attacker-sa
+  namespace: payments
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: attacker-pod
+  namespace: payments
+  labels:
+    app: attacker
+spec:
+  serviceAccountName: attacker-sa
+  containers:
+    - name: curl
+      image: curlimages/curl:8.8.0
+      command: ["sleep", "infinity"]
